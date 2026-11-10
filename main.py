@@ -16,6 +16,7 @@ def get_benchmarks(codename):
             "SPAM X": str(qsharp.compile("TestSpamX()")),
             #"cx_all X": str(qsharp.compile("TestCnotX()")),
             "syndrome X": str(qsharp.compile("TestSyndromeX()")),
+            #"syndrome 10Z": str(qsharp.compile("TestSyndrome10Z()"))
         }
     elif codename == "Rep3":
         return {
@@ -23,6 +24,7 @@ def get_benchmarks(codename):
             "syndrome X": str(qsharp.compile("TestSyndromeX()")),
             "SPAM X": str(qsharp.compile("TestSpamX()")),
             "SPAM Z": str(qsharp.compile("TestSpamZ()")),
+            "syndrome 10Z": str(qsharp.compile("TestSyndrome10Z()"))
         }
     else: 
         return {}
@@ -50,16 +52,16 @@ def fit_slope(ps, rows, n_min_fails=20, p_max=0.1):
 
 
 def plot_data(data, ps, codename):
-    colors = ["tab:blue", "tab:orange", "tab:green", "tab:red"]; i=0
+    colors = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple", "tab:cyan"]; i=0
     xs = np.logspace(np.log10(ps.min()), np.log10(ps.max()), 50)
     fig, ax = plt.subplots(figsize=(6, 4.5))
     for name, rows in data.items():
         slope, slope_err, c, npts = fit_slope(ps, rows)
         if not np.isnan(slope):
-            ax.plot(xs, c * xs**slope, "--", color=colors[i])
+            ax.plot(xs, c * xs**slope, "--", color=colors[i%len(colors)])
         print(name, " slope: ", slope)
         ler = np.array([r[0] for r in rows]); err = np.array([r[1] for r in rows])
-        ax.errorbar(ps, ler, yerr=err, marker="o", capsize=3, label=name, color=colors[i])
+        ax.errorbar(ps, ler, yerr=err, marker="o", capsize=3, label=name, color=colors[i % len(colors)])
         i +=1
 
     ax.plot(ps, ps, "k--", lw=1, label="logical = physical")
@@ -89,7 +91,7 @@ def main(code_dict):
     #    print(name, gadget)   # inspect operands and outcomes
 
     available = set(protocol.layers[0].instruction_set.instructions)
-    print("Logical instructions:", sorted(available))
+    #print("Logical instructions:", sorted(available))
 
     qsharp.init(target_profile=TargetProfile.Adaptive_RI)
     qsharp.eval(Path(code_dict["name"] + "_instructions.qs").read_text())
@@ -103,7 +105,6 @@ def main(code_dict):
     #verification = simulate(protocol, benchmarks, np.array([0]), code_dict["shots"])
     #print(verification)
 
-
 # c4 error correction code
 c4 = {
     "name": "C4",
@@ -113,7 +114,7 @@ c4 = {
     "shots": 5000,
     "ps": np.logspace(-3.5, -1, 12)
 }
-main(c4)
+#main(c4)
 
 
 # [[3,1,1]] repetition code
@@ -126,5 +127,6 @@ rep3 = {
     "ps": np.logspace(-3.5, -1, 12)
 }
 main(rep3)
+
 
 plt.show()

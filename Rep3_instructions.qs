@@ -70,3 +70,12 @@ operation TestSyndromeX() : Result[] {
     let m = measure_x_all(block);
     [m]
 }
+
+
+operation TestSyndrome10Z() : Result[] {
+    use block = Qubit();
+    prepare_z_all(block);
+    for _ in 1..10 { syndrome(block); }
+    let m = measure_z_all(block);
+    [m]
+}
