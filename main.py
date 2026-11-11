@@ -26,6 +26,14 @@ def get_benchmarks(codename):
             "SPAM Z": str(qsharp.compile("TestSpamZ()")),
             "syndrome 10Z": str(qsharp.compile("TestSyndrome10Z()"))
         }
+    elif codename == "d3-surface":
+        return {
+            "syndrome Z": str(qsharp.compile("TestSyndromeZ()")),
+            "syndrome X": str(qsharp.compile("TestSyndromeX()")),
+            "SPAM X": str(qsharp.compile("TestSpamX()")),
+            "SPAM Z": str(qsharp.compile("TestSpamZ()")),
+            "syndrome 10Z": str(qsharp.compile("TestSyndrome10Z()"))
+        }
     else: 
         return {}
 
@@ -126,7 +134,29 @@ rep3 = {
     "shots": 5000,#100000
     "ps": np.logspace(-3.5, -1, 12)
 }
-main(rep3)
+#main(rep3)
 
+#[[9,1,3]] d3 surface code
+d3 = {
+    "name": "d3-surface",
+    "stabilizers": [
+        # X-type: 2 bulk plaquettes + 2 boundary
+        "X_0 X_1 X_3 X_4",
+        "X_4 X_5 X_7 X_8",
+        "X_1 X_2",
+        "X_6 X_7",
+        # Z-type: 2 bulk plaquettes + 2 boundary
+        "Z_1 Z_2 Z_4 Z_5",
+        "Z_3 Z_4 Z_6 Z_7",
+        "Z_0 Z_3",
+        "Z_5 Z_8",
+    ],
+    "x":["X_0 X_3 X_6"],  # left column
+    "z":["Z_0 Z_1 Z_2"],  # top row
+    "shots": 5000, 
+    "ps": np.logspace(-3.5, -1, 12)
+}
+
+main(d3)
 
 plt.show()
