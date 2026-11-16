@@ -15,8 +15,8 @@ rep3 = {
     "stabilizers":["Z_0 Z_1", "Z_1 Z_2"],
     "x":["X_0 X_1 X_2"],
     "z":["Z_0"],
-    "shots": 5000,#100000
-    "ps": np.logspace(-3.5, -1, 12),
+    "shots": 100000,
+    "ps": np.logspace(-3.5, -1, 15),
     "color": "tab:blue"
 }
 
@@ -26,8 +26,8 @@ rep5 = {
     "stabilizers": ["Z_0 Z_1", "Z_1 Z_2", "Z_2 Z_3", "Z_3 Z_4"],
     "x":["X_0 X_1 X_2 X_3 X_4"],
     "z":["Z_0"],
-    "shots": 5000,#100000
-    "ps": np.logspace(-3.5, -1, 12), 
+    "shots": 100000,
+    "ps": np.logspace(-3.5, -1, 15), 
     "color": "tab:orange"
 }
 
@@ -37,8 +37,8 @@ rep7 = {
     "stabilizers":["Z_0 Z_1", "Z_1 Z_2", "Z_2 Z_3", "Z_3 Z_4", "Z_4 Z_5", "Z_5 Z_6"],
     "x":["X_0 X_1 X_2 X_3 X_4 X_5 X_6"],
     "z":["Z_0"],
-    "shots": 5000,#100000
-    "ps": np.logspace(-3.5, -1, 12),
+    "shots": 100000,
+    "ps": np.logspace(-3.5, -1, 15),
     "color": "tab:green"
 }
 
