@@ -7,39 +7,6 @@ from c4_optimization import c4_improve_circuit
 
 from simulation import simulate
 
-def get_benchmarks(codename):
-    if codename == "C4":
-        return {
-            "SPAM Z": str(qsharp.compile("TestSpamZ()")),
-            #"cx_all Z": str(qsharp.compile("TestCnotZ()")),
-            "syndrome Z": str(qsharp.compile("TestSyndromeZ()")),
-            "SPAM X": str(qsharp.compile("TestSpamX()")),
-            #"cx_all X": str(qsharp.compile("TestCnotX()")),
-            "syndrome X": str(qsharp.compile("TestSyndromeX()")),
-            #"syndrome 10Z": str(qsharp.compile("TestSyndrome10Z()"))
-        }
-    elif codename == "Rep3":
-        return {
-            "syndrome Z": str(qsharp.compile("TestSyndromeZ()")),
-            "syndrome X": str(qsharp.compile("TestSyndromeX()")),
-            "SPAM X": str(qsharp.compile("TestSpamX()")),
-            "SPAM Z": str(qsharp.compile("TestSpamZ()")),
-            "syndrome 10Z": str(qsharp.compile("TestSyndrome10Z()"))
-        }
-    elif codename == "d3-surface":
-        return {
-            "syndrome Z": str(qsharp.compile("TestSyndromeZ()")),
-            "syndrome X": str(qsharp.compile("TestSyndromeX()")),
-            "SPAM X": str(qsharp.compile("TestSpamX()")),
-            "SPAM Z": str(qsharp.compile("TestSpamZ()")),
-            "syndrome 10Z": str(qsharp.compile("TestSyndrome10Z()"))
-        }
-    else: 
-        return {}
-
-
-
-
 def fit_slope(ps, rows, n_min_fails=20, p_max=0.1):
     p_L, err, n = (np.array(col) for col in zip(*rows))
     fails = n*p_L
@@ -59,25 +26,23 @@ def fit_slope(ps, rows, n_min_fails=20, p_max=0.1):
 
 
 
-def plot_data(data, ps, codename):
-    colors = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple", "tab:cyan"]; i=0
+def plot_data(data, code_dict, ax):
+    ps = code_dict["ps"]
     xs = np.logspace(np.log10(ps.min()), np.log10(ps.max()), 50)
-    fig, ax = plt.subplots(figsize=(6, 4.5))
+    name = None
     for name, rows in data.items():
         slope, slope_err, c, npts = fit_slope(ps, rows)
         if not np.isnan(slope):
-            ax.plot(xs, c * xs**slope, "--", color=colors[i%len(colors)])
+            ax.plot(xs, c * xs**slope, "--", color=code_dict["color"])
         print(name, " slope: ", slope)
         ler = np.array([r[0] for r in rows]); err = np.array([r[1] for r in rows])
-        ax.errorbar(ps, ler, yerr=err, marker="o", capsize=3, label=name, color=colors[i % len(colors)])
-        i +=1
+        ax.errorbar(ps, ler, yerr=err, marker="o", capsize=3, label=code_dict["name"], color=code_dict["color"])
 
-    ax.plot(ps, ps, "k--", lw=1, label="logical = physical")
     ax.set_xscale("log"); ax.set_yscale("log")
     ax.set_xlabel("Physical error rate p"); ax.set_ylabel("Logical error rate (post-selected)")
-    ax.set_title(codename + " code, bare-css/v1 protocol"); ax.legend(); ax.grid(True, which="both", alpha=0.3)
+    ax.set_title(name + " , bare-css/v1 protocol"); ax.legend(); ax.grid(True, which="both", alpha=0.3)
 
-def main(code_dict):
+def main(code_dict, ax):
     code = qodec.Code(
         code_dict["name"],
         stabilizers=code_dict["stabilizers"],
@@ -87,7 +52,7 @@ def main(code_dict):
     profile = ec.CodeProfile(code)
     print(profile.logical_qubit_count, profile.distance())
 
-    protocol = ec.build_qodec(code, strategy="bare-css/v1", strict=False)
+    protocol = ec.build_qodec(code, strategy="flagged-css/v1", strict=False)
     if code_dict["name"] == 'C4':
         protocol = c4_improve_circuit(protocol)
 
@@ -95,68 +60,37 @@ def main(code_dict):
     if report.errors or report.warnings:
         raise ValueError(str(report))
 
-    #for name, gadget in sorted(protocol.layers[0].gadgets.items()):
-    #    print(name, gadget)   # inspect operands and outcomes
+    for name, gadget in sorted(protocol.layers[0].gadgets.items()):
+        print(name, gadget)   # inspect operands and outcomes
 
     available = set(protocol.layers[0].instruction_set.instructions)
-    #print("Logical instructions:", sorted(available))
+    print("Logical instructions:", sorted(available))
 
     qsharp.init(target_profile=TargetProfile.Adaptive_RI)
     qsharp.eval(Path(code_dict["name"] + "_instructions.qs").read_text())
-    benchmarks = get_benchmarks(code_dict["name"])
+    benchmarks = {
+        "syndrome Z": str(qsharp.compile("TestSyndromeZ()")),
+        #"syndrome X": str(qsharp.compile("TestSyndromeX()")),
+        }
 
     ### Run simulation ###
     data = simulate(protocol, benchmarks, code_dict["ps"], code_dict["shots"])
-    plot_data(data, code_dict["ps"], code_dict["name"])
+    plot_data(data, code_dict, ax)
 
     #print("Check zero error rate")
     #verification = simulate(protocol, benchmarks, np.array([0]), code_dict["shots"])
     #print(verification)
 
-# c4 error correction code
-c4 = {
-    "name": "C4",
-    "stabilizers": ["X_0 X_1 X_2 X_3", "Z_0 Z_1 Z_2 Z_3"],
-    "x": ["X_0 X_1", "X_0 X_2"],
-    "z": ["Z_0 Z_2", "Z_0 Z_1"],
-    "shots": 5000,
-    "ps": np.logspace(-3.5, -1, 12)
-}
-#main(c4)
+from codes import rep3, rep5, rep7
+fig, ax = plt.subplots(figsize=(6, 4.5))
+ax.plot([1e-3, 10**-1.5], [10**-3, 10**-1.5], "k--", lw=1, label="logical = physical")
+main(rep3, ax)
+main(rep5, ax)
+main(rep7, ax)
 
-
-# [[3,1,1]] repetition code
-rep3 = {
-    "name": "Rep3",
-    "stabilizers":["Z_0 Z_1", "Z_1 Z_2"],
-    "x":["X_0 X_1 X_2"],
-    "z":["Z_0"],
-    "shots": 5000,#100000
-    "ps": np.logspace(-3.5, -1, 12)
-}
-#main(rep3)
-
-#[[9,1,3]] d3 surface code
-d3 = {
-    "name": "d3-surface",
-    "stabilizers": [
-        # X-type: 2 bulk plaquettes + 2 boundary
-        "X_0 X_1 X_3 X_4",
-        "X_4 X_5 X_7 X_8",
-        "X_1 X_2",
-        "X_6 X_7",
-        # Z-type: 2 bulk plaquettes + 2 boundary
-        "Z_1 Z_2 Z_4 Z_5",
-        "Z_3 Z_4 Z_6 Z_7",
-        "Z_0 Z_3",
-        "Z_5 Z_8",
-    ],
-    "x":["X_0 X_3 X_6"],  # left column
-    "z":["Z_0 Z_1 Z_2"],  # top row
-    "shots": 5000, 
-    "ps": np.logspace(-3.5, -1, 12)
-}
-
-main(d3)
+#fig, ax1 = plt.subplots(figsize=(6, 4.5))
+#ax1.plot([1e-3, 10**-1.5], [10**-3, 10**-1.5], "k--", lw=1, label="logical = physical")
+#main(c4, ax1)
+#main(d3, ax1)
 
 plt.show()

@@ -5,11 +5,12 @@ def is_one(r):
     return "One" in str(r) or str(r) == "1"
 
 ### Function for part B ###
+"""
 def logical_error_rate(shots, total, n_final=1):
-    """
+    '''
     Parses flat shot arrays where the last n_final elements are the final logical 
     readout(s), and all preceding elements are mid-circuit syndrome measurements.
-    """
+    '''
     parsed_shots = []
     for s in shots:
         if not isinstance(s, (list, np.ndarray)):
@@ -45,24 +46,20 @@ def logical_error_rate(shots, total, n_final=1):
 """
 ### Original function for part A ###
 def logical_error_rate(shots, total):
-    try: 
-        kept = [s for s in shots if not any(is_one(r) for r in s[0])]  # post-select on flag = Zero
-    except:
-        kept = shots
 
-    if not kept:
+    if not shots:
         return np.nan, np.nan, 0
     try: 
-        fails = sum(any(is_one(r) for r in s[1]) for s in kept)
+        fails = sum(any(is_one(r) for r in s[1]) for s in shots)
     except: 
-        fails = sum(any(is_one(r) for r in s) for s in kept)
-    n = len(kept)
+        fails = sum(any(is_one(r) for r in s) for s in shots)
+    n = len(shots)
     p = fails / n
     print("fails: ", fails, ", shots: ", len(shots), ", kept: ", n)
 
     errors = np.sqrt(max(p * (1 - p), 1e-12) / n)
     return p, errors, n
-"""
+
 def make_noise(p):
     noise = NoiseConfig()
     for gate in (noise.h, noise.cx, noise.cz):
@@ -80,5 +77,7 @@ def simulate(protocol, qirs, ps, SHOTS):
                             type="stabilizer", shots=SHOTS, seed=42,
                             on_shot_failure="discard")
             data[name].append(logical_error_rate(shots, SHOTS))
+            #print(shots)
+            
         print("done:", name)
     return data
