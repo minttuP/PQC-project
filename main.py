@@ -67,7 +67,7 @@ def main(code_dict, ax):
     print("Logical instructions:", sorted(available))
 
     qsharp.init(target_profile=TargetProfile.Adaptive_RI)
-    qsharp.eval(Path(code_dict["name"] + "_instructions.qs").read_text())
+    qsharp.eval(Path("instructions/" + code_dict["name"] + "_instructions.qs").read_text())
     benchmarks = {
         "syndrome Z": str(qsharp.compile("TestSyndromeZ()")),
         #"syndrome X": str(qsharp.compile("TestSyndromeX()")),
