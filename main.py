@@ -32,6 +32,10 @@ decoders = {
     "rep5": [
         ["00000", "10010", "01001", "11011", "10100", "00110", "11101", "01111", "01010", "11000", "00011", "10001", "11110", "01100", "10111", "00101"], 
         ["11111", "01101", "10110", "00100", "01011", "11001", "00010", "10000", "10101", "00111", "11100", "01110", "00001", "10011", "01000", "11010"]
+    ],
+    "rep7": [
+        ["0000000", "1010101", "0110011", "1100110", "0001111", "1011010", "0111100", "1101001"], 
+        ["1111111", "0101010", "1001100", "0011001", "1110000", "0100101", "1000011", "0010110"]
     ]
 }
 
@@ -39,9 +43,9 @@ def logical_error_rate(name, shots):
     if not shots:
         return np.nan, np.nan, 0
 
-    ones = decoders[name.replace("_B()", "").replace("_A()", "")][1]
+    zeros = decoders[name.replace("_B()", "").replace("_A()", "")][0]
     # Count failures in the codewords
-    fails = sum([meas_to_string(s[1]) in ones for s in shots])
+    fails = sum([meas_to_string(s[1]) not in zeros for s in shots])
 
     n = len(shots)
     p = fails / n
@@ -84,7 +88,6 @@ qsharp.init(target_profile=TargetProfile.Adaptive_RI)
 qsharp.eval(Path("rep_instruction.qs").read_text())
 
 ps = np.logspace(-5, -1.5, 12)
-main(["rep3_A()", "rep3_B()", "rep5_B()", "rep5_A()"], 10000, ps)
+main(["rep3_A()", "rep3_B()", "rep5_B()", "rep5_A()", "rep7_B()"], 10000, ps)
 plt.show()
 
-#main(["rep5_B()"], 200, [0])
