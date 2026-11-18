@@ -25,27 +25,33 @@ def meas_to_string(meas):
     return s
 
 decoders = {
-    "rep3": [
-        ["000", "001", "010", "100"], 
-        ["111", "110", "101", "011"]
-    ],
-    "rep5": [
+    "5_1_3": [
         ["00000", "10010", "01001", "11011", "10100", "00110", "11101", "01111", "01010", "11000", "00011", "10001", "11110", "01100", "10111", "00101"], 
         ["11111", "01101", "10110", "00100", "01011", "11001", "00010", "10000", "10101", "00111", "11100", "01110", "00001", "10011", "01000", "11010"]
     ],
-    "rep7": [
+    "steane": [
         ["0000000", "1010101", "0110011", "1100110", "0001111", "1011010", "0111100", "1101001"], 
         ["1111111", "0101010", "1001100", "0011001", "1110000", "0100101", "1000011", "0010110"]
     ]
 }
+def get_fails(name, shots): 
+    if "rep" in name: 
+        fails = 0
+        for s in shots:
+            result = sum(["One" in str(r) or str(r) == "1" for r in s[1]])
+            if result > len(s[1]) / 2 :
+                fails += 1
+        return fails
+    else: 
+        zeros = decoders[name.replace("_B()", "").replace("_A()", "")][0]
+        return sum([meas_to_string(s[1]) not in zeros for s in shots])
 
 def logical_error_rate(name, shots):
     if not shots:
         return np.nan, np.nan, 0
 
-    zeros = decoders[name.replace("_B()", "").replace("_A()", "")][0]
     # Count failures in the codewords
-    fails = sum([meas_to_string(s[1]) not in zeros for s in shots])
+    fails = get_fails(name, shots)
 
     n = len(shots)
     p = fails / n
@@ -69,11 +75,12 @@ def plot_data(data, ps, ax):
     name = None
     for name, rows in data.items():
         ler = np.array([r[0] for r in rows]); err = np.array([r[1] for r in rows])
-        ax.errorbar(ps, ler, yerr=err, marker="o", capsize=3, label=name)
+        ax.errorbar(ps, ler, yerr=err, marker="o", capsize=3, label=name.replace("()", ""))
 
     ax.set_xscale("log"); ax.set_yscale("log")
-    ax.set_xlabel("Physical error rate p"); ax.set_ylabel("Logical error rate (post-selected)")
-    ax.set_title(name + " , bare-css/v1 protocol"); ax.legend(); ax.grid(True, which="both", alpha=0.3)
+    ax.set_xlabel("Physical error rate p"); ax.set_ylabel("Logical error rate")
+    #ax.set_title(name + " , bare-css/v1 protocol"); 
+    ax.legend(); ax.grid(True, which="both", alpha=0.3)
 
 def main(qirs, shots, ps):
     data = simulate(qirs, ps, shots)
@@ -88,6 +95,12 @@ qsharp.init(target_profile=TargetProfile.Adaptive_RI)
 qsharp.eval(Path("rep_instruction.qs").read_text())
 
 ps = np.logspace(-5, -1.5, 12)
-main(["rep3_A()", "rep3_B()", "rep5_B()", "rep5_A()", "rep7_B()"], 10000, ps)
-plt.show()
+main(["rep3_A()", "rep5_A()", "rep7_A()"], 100000, ps)
 
+main(["rep3_B()", "rep5_B()", "rep7_B()"], 100000, ps)
+
+main(["rep3_A()", "rep3_B()"], 10000, ps)
+main(["rep5_A()", "rep5_B()"], 10000, ps)
+main(["rep7_A()", "rep7_B()"], 10000, ps)
+
+plt.show()
