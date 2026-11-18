@@ -23,7 +23,7 @@ def logical_error_rate(shots):
         return np.nan, np.nan, 0
     fails = 0
     for s in shots:
-        result = sum([is_one(r) for r in s])
+        result = sum([is_one(r) for r in s[1]])
         if result > len(s) / 2 :
             fails += 1
 
@@ -40,7 +40,7 @@ def simulate(qirs, ps, SHOTS):
         qir = qsharp.compile(circuit)
         for p in ps:
             shots = run_qir(qir, shots=SHOTS, noise=make_noise(p), type="clifford")
-            print(Counter(str(r) for r in shots))
+            #print(Counter(str(r) for r in shots))
             data[circuit].append(logical_error_rate(shots))
     return data
 
@@ -61,14 +61,15 @@ def main(qirs, shots, ps):
     ## Plot results ##
     fig, ax = plt.subplots()
     ax.plot(ps, ps, label="pL=p")
-    #plot_data(data, ps, ax)
+    plot_data(data, ps, ax)
 
 # Initialize 
 qsharp.init(target_profile=TargetProfile.Adaptive_RI)
 qsharp.eval(Path("rep_instruction.qs").read_text())
 
 ps = np.logspace(-5, -1.5, 12)
-main(["rep3_A_Z()", "rep5_A_Z()", "rep7_A_Z()"], 100000, ps)
+main(["rep3_A()", "rep3_B()", "rep5_B()"], 5000, ps)
 plt.show()
 
 ## TODO: write rep 5 and rep 7 codes, simulate them. The current codes are wrong. 
+## TODO: add error correction for part B
