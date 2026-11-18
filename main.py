@@ -15,17 +15,33 @@ def make_noise(p):
     #noise.mresetz.x = p
     return noise
 
-def is_one(r):
-    return "One" in str(r) or str(r) == "1"
+def meas_to_string(meas):
+    s = ""
+    for r in meas:
+        if "One" in str(r) or str(r) == "1":
+            s += "1"
+        else:
+            s += "0"
+    return s
 
-def logical_error_rate(shots):
+decoders = {
+    "rep3": [
+        ["000", "001", "010", "100"], 
+        ["111", "110", "101", "011"]
+    ],
+    "rep5": [
+        ["00000", "10010", "01001", "11011", "10100", "00110", "11101", "01111", "01010", "11000", "00011", "10001", "11110", "01100", "10111", "00101"], 
+        ["11111", "01101", "10110", "00100", "01011", "11001", "00010", "10000", "10101", "00111", "11100", "01110", "00001", "10011", "01000", "11010"]
+    ]
+}
+
+def logical_error_rate(name, shots):
     if not shots:
         return np.nan, np.nan, 0
-    fails = 0
-    for s in shots:
-        result = sum([is_one(r) for r in s[1]])
-        if result > len(s) / 2 :
-            fails += 1
+
+    ones = decoders[name.replace("_B()", "").replace("_A()", "")][1]
+    # Count failures in the codewords
+    fails = sum([meas_to_string(s[1]) in ones for s in shots])
 
     n = len(shots)
     p = fails / n
@@ -36,12 +52,12 @@ def logical_error_rate(shots):
 
 def simulate(qirs, ps, SHOTS):
     data = {name: [] for name in qirs}
-    for circuit in qirs:
-        qir = qsharp.compile(circuit)
+    for name in qirs:
+        qir = qsharp.compile(name)
         for p in ps:
             shots = run_qir(qir, shots=SHOTS, noise=make_noise(p), type="clifford")
             #print(Counter(str(r) for r in shots))
-            data[circuit].append(logical_error_rate(shots))
+            data[name].append(logical_error_rate(name, shots))
     return data
 
 def plot_data(data, ps, ax):
@@ -68,8 +84,7 @@ qsharp.init(target_profile=TargetProfile.Adaptive_RI)
 qsharp.eval(Path("rep_instruction.qs").read_text())
 
 ps = np.logspace(-5, -1.5, 12)
-main(["rep3_A()", "rep3_B()", "rep5_B()"], 5000, ps)
+main(["rep3_A()", "rep3_B()", "rep5_B()", "rep5_A()"], 10000, ps)
 plt.show()
 
-## TODO: write rep 5 and rep 7 codes, simulate them. The current codes are wrong. 
-## TODO: add error correction for part B
+#main(["rep5_B()"], 200, [0])
