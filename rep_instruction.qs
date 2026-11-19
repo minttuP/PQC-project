@@ -15,25 +15,25 @@ import Std.Measurement.*;
 
 /// Generic repetition code. `errors` lists the data qubits that get an X error
 /// (empty array = noiseless run). Returns (syndrome, final Z-basis data measurements).
-operation RepetitionCodeB(n : Int, errors : Int[]) : (Result[], Result[]) {
-    use data = Qubit[n];       // initialised to |0>
-    use anc = Qubit[n - 1];
-
-    // Entangle qubits
-    for i in 1..n - 1 {CNOT(data[0], data[i]);}
-
-    // Inject errors
-    for e in errors {
-        X(data[e]);
+operation addNoise(data: Qubit[], n: Int, k: Int) : Unit {
+    // Adding random errors: error happens with gates with some propability. 
+    // Simulates waiting time
+    for i in 0..n-1 {
+        for k in 0..k {
+            H(data[i]); H(data[i]); 
+        }
     }
+}
 
+operation apply_syndrome(data: Qubit[], anc: Qubit[], n: Int) : Unit {
     // Parity checks between neighbouring data qubits
     for i in 0..n - 2 {
         CNOT(data[i], anc[i]);
         CNOT(data[i + 1], anc[i]);
     }
-    let syndrome = MResetEachZ(anc);
+}
 
+operation correct_lookuptable(data: Qubit[], syndrome: Result[], n: Int) : Unit {
     // Reconstruct the error pattern with e[0] = false: e[i+1] = e[i] xor s[i].
     // The complement of that pattern has the same syndrome, so pick the lighter one.
     mutable e = [false, size = n];
@@ -52,53 +52,59 @@ operation RepetitionCodeB(n : Int, errors : Int[]) : (Result[], Result[]) {
             X(data[i]);
         }
     }
-
-    // Measure in Z basis
-    let results = MResetEachZ(data);
-    (syndrome, results)
 }
 
-operation RepetitionCodeA(n : Int, errors : Int[]) : (Result[], Result[]) {
+operation RepetitionCodeB(n : Int, k: Int) : (Result[], Result[]) {
+    // Initialize
     use data = Qubit[n];       // initialised to |0>
     use anc = Qubit[n - 1];
+    for i in 1..n - 1 {CNOT(data[0], data[i]);} // Entangle qubits
 
-    // Entangle qubits
-    for i in 1..n - 1 {
-        CNOT(data[0], data[i]);
-    }
+    addNoise(data, n, k);
 
-    // Inject errors
-    //for e in errors {
-    //    X(data[e]);
-    //}
-    // Adding random errors: error happens with gates with some propability. 
-    // Simulates waiting time
-    //for i in 0..n-1 {
-    //    for k in 0..32 {
-    //        H(data[i]); H(data[i]);
-    //    }
-    //}
-
-    // Parity checks between neighbouring data qubits
-    for i in 0..n - 2 {
-        CNOT(data[i], anc[i]);
-        CNOT(data[i + 1], anc[i]);
-    }
+    apply_syndrome(data, anc, n);
     let syndrome = MResetEachZ(anc);
-
+    correct_lookuptable(data, syndrome, n);
     // Measure in Z basis
     let results = MResetEachZ(data);
     (syndrome, results)
 }
 
-operation rep3_A() : (Result[], Result[]) { RepetitionCodeA(3, []) }
-operation rep5_A() : (Result[], Result[]) { RepetitionCodeA(5, []) }
-operation rep7_A() : (Result[], Result[]) { RepetitionCodeA(7, []) }
+operation RepetitionCodeA(n : Int, k: Int) : (Result[], Result[]) {
+    // Initialize
+    use data = Qubit[n];       // initialised to |0>
+    use anc = Qubit[n - 1];
+    for i in 1..n - 1 {CNOT(data[0], data[i]);} // Entangle qubits
 
-operation rep3_B() : (Result[], Result[]) { RepetitionCodeB(3, []) }
-operation rep5_B() : (Result[], Result[]) { RepetitionCodeB(5, []) }
-operation rep7_B() : (Result[], Result[]) { RepetitionCodeB(7, []) }
+    addNoise(data, n, k);
+    let results = MResetEachZ(data);
+    ([results[0]], results)
+}
 
-operation rep3_C() : (Result[], Result[]) { RepetitionCodeA(3, []) }
-operation rep5_C() : (Result[], Result[]) { RepetitionCodeA(5, []) }
-operation rep7_C() : (Result[], Result[]) { RepetitionCodeA(7, []) }
+operation RepetitionCodeC(n : Int, k: Int) : (Result[], Result[]) {
+    // Initialize
+    use data = Qubit[n];       // initialised to |0>
+    use anc = Qubit[n - 1];
+    for i in 1..n - 1 {CNOT(data[0], data[i]);} // Entangle qubits
+
+    addNoise(data, n, k);
+
+    apply_syndrome(data, anc, n);
+    let syndrome = MResetEachZ(anc);
+    // Measure in Z basis
+    let results = MResetEachZ(data);
+    (syndrome, results)
+}
+
+
+operation rep3_A() : (Result[], Result[]) { RepetitionCodeA(3, 32) }
+operation rep5_A() : (Result[], Result[]) { RepetitionCodeA(5, 32) }
+operation rep7_A() : (Result[], Result[]) { RepetitionCodeA(7, 32) }
+
+operation rep3_B() : (Result[], Result[]) { RepetitionCodeB(3, 32) }
+operation rep5_B() : (Result[], Result[]) { RepetitionCodeB(5, 32) }
+operation rep7_B() : (Result[], Result[]) { RepetitionCodeB(7, 32) }
+
+operation rep3_C() : (Result[], Result[]) { RepetitionCodeC(3, 32) }
+operation rep5_C() : (Result[], Result[]) { RepetitionCodeC(5, 32) }
+operation rep7_C() : (Result[], Result[]) { RepetitionCodeC(7, 32) }
