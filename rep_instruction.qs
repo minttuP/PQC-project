@@ -20,9 +20,7 @@ operation RepetitionCodeB(n : Int, errors : Int[]) : (Result[], Result[]) {
     use anc = Qubit[n - 1];
 
     // Entangle qubits
-    for i in 1..n - 1 {
-        CNOT(data[0], data[i]);
-    }
+    for i in 1..n - 1 {CNOT(data[0], data[i]);}
 
     // Inject errors
     for e in errors {
@@ -70,9 +68,16 @@ operation RepetitionCodeA(n : Int, errors : Int[]) : (Result[], Result[]) {
     }
 
     // Inject errors
-    for e in errors {
-        X(data[e]);
-    }
+    //for e in errors {
+    //    X(data[e]);
+    //}
+    // Adding random errors: error happens with gates with some propability. 
+    // Simulates waiting time
+    //for i in 0..n-1 {
+    //    for k in 0..32 {
+    //        H(data[i]); H(data[i]);
+    //    }
+    //}
 
     // Parity checks between neighbouring data qubits
     for i in 0..n - 2 {
@@ -93,3 +98,7 @@ operation rep7_A() : (Result[], Result[]) { RepetitionCodeA(7, []) }
 operation rep3_B() : (Result[], Result[]) { RepetitionCodeB(3, []) }
 operation rep5_B() : (Result[], Result[]) { RepetitionCodeB(5, []) }
 operation rep7_B() : (Result[], Result[]) { RepetitionCodeB(7, []) }
+
+operation rep3_C() : (Result[], Result[]) { RepetitionCodeA(3, []) }
+operation rep5_C() : (Result[], Result[]) { RepetitionCodeA(5, []) }
+operation rep7_C() : (Result[], Result[]) { RepetitionCodeA(7, []) }

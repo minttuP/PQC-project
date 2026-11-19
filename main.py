@@ -4,6 +4,7 @@ from qdk import qsharp, TargetProfile
 from collections import Counter
 from pathlib import Path
 import matplotlib.pyplot as plt
+from decoders import choose_decoding
 
 
 def make_noise(p):
@@ -18,7 +19,7 @@ def make_noise(p):
 def meas_to_string(meas):
     s = ""
     for r in meas:
-        if "One" in str(r) or str(r) == "1":
+        if  r == qsharp.Result.One:
             s += "1"
         else:
             s += "0"
@@ -38,7 +39,7 @@ def get_fails(name, shots):
     if "rep" in name: 
         fails = 0
         for s in shots:
-            result = sum(["One" in str(r) or str(r) == "1" for r in s[1]])
+            result = sum([ r == qsharp.Result.One for r in s[1]])
             if result > len(s[1]) / 2 :
                 fails += 1
         return fails
@@ -66,6 +67,7 @@ def simulate(qirs, ps, SHOTS):
         qir = qsharp.compile(name)
         for p in ps:
             shots = run_qir(qir, shots=SHOTS, noise=make_noise(p), type="clifford")
+            shots = choose_decoding(name, p, shots)
             #print(Counter(str(r) for r in shots))
             data[name].append(logical_error_rate(name, shots))
     return data
@@ -88,19 +90,23 @@ def main(qirs, shots, ps):
     ## Plot results ##
     fig, ax = plt.subplots()
     ax.plot(ps, ps, label="pL=p")
-    plot_data(data, ps, ax)
+    #plot_data(data, ps, ax)
 
 # Initialize 
 qsharp.init(target_profile=TargetProfile.Adaptive_RI)
 qsharp.eval(Path("rep_instruction.qs").read_text())
 
 ps = np.logspace(-5, -1.5, 12)
-main(["rep3_A()", "rep5_A()", "rep7_A()"], 100000, ps)
+#main(["rep3_A()", "rep5_A()", "rep7_A()"], 100000, ps)
 
-main(["rep3_B()", "rep5_B()", "rep7_B()"], 100000, ps)
+#main(["rep3_B()", "rep5_B()", "rep7_B"], 100000, ps)
 
-main(["rep3_A()", "rep3_B()"], 10000, ps)
-main(["rep5_A()", "rep5_B()"], 10000, ps)
-main(["rep7_A()", "rep7_B()"], 10000, ps)
+#main(["rep3_A()", "rep3_B()", "rep3_C()"], 10000, ps)
+#main(["rep5_A()", "rep5_B()", "rep5_C()"], 10000, ps)
+#main(["rep7_A()", "rep7_B()", "rep7_C()"], 10000, ps)
+
+main(["rep3_C()", "rep5_C()", "rep7_C()"], 10000, ps)
+
+#main(["rep7_C()"], 10, [1e-1])
 
 plt.show()
