@@ -64,12 +64,17 @@ def logical_error_rate(name, shots):
 def simulate(qirs, ps, SHOTS):
     data = {name: [] for name in qirs}
     for name in qirs:
-        qir = qsharp.compile(name)
-        for p in ps:
-            shots = run_qir(qir, shots=SHOTS, noise=make_noise(p), type="clifford")
-            shots = choose_decoding(name, p, shots)
-            #print(Counter(str(r) for r in shots))
-            data[name].append(logical_error_rate(name, shots))
+        if "_A" in name or "_B" in name: 
+            qir = qsharp.compile(name + "()")
+            for p in ps:
+                shots = run_qir(qir, shots=SHOTS, noise=make_noise(p), type="clifford")
+                #print(Counter(str(r) for r in shots))
+                data[name].append(logical_error_rate(name, shots))
+        else: 
+            for p in ps:
+                shots = qsharp.run(name + "(" + str(p) + ")", shots=SHOTS, noise=make_noise(p))
+                #print(Counter(str(r) for r in shots))
+                data[name].append(logical_error_rate(name, shots))
     return data
 
 def plot_data(data, ps, ax):
@@ -84,29 +89,34 @@ def plot_data(data, ps, ax):
     #ax.set_title(name + " , bare-css/v1 protocol"); 
     ax.legend(); ax.grid(True, which="both", alpha=0.3)
 
-def main(qirs, shots, ps):
+def main(qirs, shots, ps, ax, targetprofile, instruction_file):
+    qsharp.init(target_profile=targetprofile)
+    qsharp.eval(Path(instruction_file).read_text())
+
     data = simulate(qirs, ps, shots)
     print(data)
     ## Plot results ##
-    fig, ax = plt.subplots()
-    ax.plot(ps, ps, label="pL=p")
-    #plot_data(data, ps, ax)
+    plot_data(data, ps, ax)
 
-# Initialize 
-qsharp.init(target_profile=TargetProfile.Adaptive_RI)
-qsharp.eval(Path("rep_instruction.qs").read_text())
 
 ps = np.logspace(-5, -1.5, 12)
-#main(["rep3_A()", "rep5_A()", "rep7_A()"], 100000, ps)
+fig, ax = plt.subplots()
+ax.plot(ps, ps, label="pL=p")
 
-#main(["rep3_B()", "rep5_B()", "rep7_B"], 100000, ps)
+# Part A: plot different repetition codes
+#main(["rep3_A", "rep5_A", "rep7_A"], 10000, ps, ax, TargetProfile.Adaptive_RIF, "rep_instruction.qs")
 
-#main(["rep3_A()", "rep3_B()", "rep3_C()"], 10000, ps)
-#main(["rep5_A()", "rep5_B()", "rep5_C()"], 10000, ps)
-#main(["rep7_A()", "rep7_B()", "rep7_C()"], 10000, ps)
+#main(["rep3_B", "rep5_B", "rep7_B"], 10000, ps, ax, TargetProfile.Adaptive_RIF, "rep_instruction.qs")
 
-main(["rep3_C()", "rep5_C()", "rep7_C()"], 10000, ps)
+#main(["rep3_A", "rep3_B", "rep3_C"], 10000, ps, ax, TargetProfile.Adaptive_RIF, "rep_instruction.qs")
+#main(["rep5_A", "rep5_B", "rep5_C"], 10000, ps, ax, TargetProfile.Adaptive_RIF, "rep_instruction.qs")
+#main(["rep7_A", "rep7_B", "rep7_C"], 10000, ps, ax, TargetProfile.Adaptive_RIF, "rep_instruction.qs")
 
-#main(["rep7_C()"], 10, [1e-1])
+#main(["rep3_C", "rep5_C", "rep7_C"], 10000, ps, ax, TargetProfile.Unrestricted, "rep_instruction.qs")
+
+#main(["rep7_C"], 10, [1e-1])
+
+
+# TODO: Add to belief propagation the condition saving which iteration converget and return that sta
 
 plt.show()
