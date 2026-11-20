@@ -4,8 +4,20 @@ from qdk import qsharp, TargetProfile
 from collections import Counter
 from pathlib import Path
 import matplotlib.pyplot as plt
-from decoders import choose_decoding
+from instructions import gen_decoder_C2, gen_program_C2
 
+def generate_instructions(qirs): 
+    txt = ""
+    if any(code in name for code in ["_A", "_B", "_C2"] for name in qirs):
+        Path("rep_instruction.qs").read_text()
+    if any("_C2" in name for name in qirs):
+        for name in qirs:
+            if "_C2" in name:
+                n = int(name.split("_")[0].replace("rep", ""))
+                txt += "\n" + gen_decoder_C2(n) + gen_program_C2(n)
+    
+    return txt
+    
 
 def make_noise(p):
     noise = NoiseConfig()
@@ -61,20 +73,22 @@ def logical_error_rate(name, shots):
     errors = np.sqrt(max(p * (1 - p), 1e-12) / n)
     return p, errors, n
 
-def simulate(qirs, ps, SHOTS):
+def simulate(qirs, ps, SHOTS, targetprofile):
     data = {name: [] for name in qirs}
     for name in qirs:
-        if "_A" in name or "_B" in name: 
+        if targetprofile == TargetProfile.Adaptive_RI: 
             qir = qsharp.compile(name + "()")
             for p in ps:
                 shots = run_qir(qir, shots=SHOTS, noise=make_noise(p), type="clifford")
                 #print(Counter(str(r) for r in shots))
                 data[name].append(logical_error_rate(name, shots))
-        else: 
+        elif targetprofile == TargetProfile.Unrestricted: 
             for p in ps:
                 shots = qsharp.run(name + "(" + str(p) + ")", shots=SHOTS, noise=make_noise(p))
                 #print(Counter(str(r) for r in shots))
                 data[name].append(logical_error_rate(name, shots))
+        else: 
+            raise ValueError('No match for profile')
     return data
 
 def plot_data(data, ps, ax):
@@ -89,12 +103,12 @@ def plot_data(data, ps, ax):
     #ax.set_title(name + " , bare-css/v1 protocol"); 
     ax.legend(); ax.grid(True, which="both", alpha=0.3)
 
-def main(qirs, shots, ps, ax, targetprofile, instruction_file):
+def main(qirs, shots, ps, ax, targetprofile):
     qsharp.init(target_profile=targetprofile)
-    qsharp.eval(Path(instruction_file).read_text())
+    qsharp.eval(generate_instructions(qirs))
 
-    data = simulate(qirs, ps, shots)
-    print(data)
+    data = simulate(qirs, ps, shots, targetprofile)
+    #print(data)
     ## Plot results ##
     plot_data(data, ps, ax)
 
@@ -104,19 +118,17 @@ fig, ax = plt.subplots()
 ax.plot(ps, ps, label="pL=p")
 
 # Part A: plot different repetition codes
-#main(["rep3_A", "rep5_A", "rep7_A"], 10000, ps, ax, TargetProfile.Adaptive_RIF, "rep_instruction.qs")
+#main(["rep3_A", "rep5_A", "rep7_A"], 10000, ps, ax, TargetProfile.Adaptive_RI, "rep_instruction.qs")
 
-#main(["rep3_B", "rep5_B", "rep7_B"], 10000, ps, ax, TargetProfile.Adaptive_RIF, "rep_instruction.qs")
+#main(["rep3_B", "rep5_B", "rep7_B"], 10000, ps, ax, TargetProfile.Adaptive_RI, "rep_instruction.qs")
 
-#main(["rep3_A", "rep3_B", "rep3_C"], 10000, ps, ax, TargetProfile.Adaptive_RIF, "rep_instruction.qs")
-#main(["rep5_A", "rep5_B", "rep5_C"], 10000, ps, ax, TargetProfile.Adaptive_RIF, "rep_instruction.qs")
-#main(["rep7_A", "rep7_B", "rep7_C"], 10000, ps, ax, TargetProfile.Adaptive_RIF, "rep_instruction.qs")
+#main(["rep3_A", "rep3_B", "rep3_C"], 10000, ps, ax, TargetProfile.Adaptive_RI, "rep_instruction.qs")
+#main(["rep5_A", "rep5_B", "rep5_C"], 10000, ps, ax, TargetProfile.Adaptive_RI, "rep_instruction.qs")
+#main(["rep7_A", "rep7_B", "rep7_C"], 10000, ps, ax, TargetProfile.Adaptive_RI, "rep_instruction.qs")
 
-#main(["rep3_C", "rep5_C", "rep7_C"], 10000, ps, ax, TargetProfile.Unrestricted, "rep_instruction.qs")
+#main(["rep3_C1", "rep5_C1", "rep7_C1"], 10000, ps, ax, TargetProfile.Unrestricted, "rep_instruction.qs")
 
-#main(["rep7_C"], 10, [1e-1])
+main(["rep3_C2", "rep5_C2", "rep7_C2"], 10000, ps, ax, TargetProfile.Adaptive_RI)
 
-
-# TODO: Add to belief propagation the condition saving which iteration converget and return that sta
 
 plt.show()

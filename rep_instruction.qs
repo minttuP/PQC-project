@@ -167,7 +167,7 @@ function BPDecode(H : Int[][], syndrome : Int[], p : Double, maxIter : Int) : In
     return est;
 }
 
-operation RepetitionCodeC(n : Int, k: Int, p: Double) : (Result[], Result[]) {
+operation RepetitionCodeC1(n : Int, k: Int, p: Double) : (Result[], Result[]) {
     // Initialize
     use data = Qubit[n];       // initialised to |0>
     use anc = Qubit[n - 1];
@@ -199,6 +199,6 @@ operation rep3_B() : (Result[], Result[]) { RepetitionCodeB(3, 32) }
 operation rep5_B() : (Result[], Result[]) { RepetitionCodeB(5, 32) }
 operation rep7_B() : (Result[], Result[]) { RepetitionCodeB(7, 32) }
 
-operation rep3_C(p: Double) : (Result[], Result[]) { RepetitionCodeC(3, 32, p) }
-operation rep5_C(p: Double) : (Result[], Result[]) { RepetitionCodeC(5, 32, p) }
-operation rep7_C(p: Double) : (Result[], Result[]) { RepetitionCodeC(7, 32, p) }
+operation rep3_C1(p: Double) : (Result[], Result[]) { RepetitionCodeC1(3, 32, p) }
+operation rep5_C1(p: Double) : (Result[], Result[]) { RepetitionCodeC1(5, 32, p) }
+operation rep7_C1(p: Double) : (Result[], Result[]) { RepetitionCodeC1(7, 32, p) }
